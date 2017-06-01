@@ -1,0 +1,10 @@
+{
+  "name": "chatty.brain",
+  "description": "A simple chat with vuejs, socket.io, natural-brain and nedb.",
+  "repository": "https://github.com/magikcypress/",
+  "keywords": ["chat", "vuejs", "socket.io", "brain", "nedb"],
+  "env": {
+    "PORT": null,
+    "HOSTNAME": null,
+  }
+}

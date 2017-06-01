@@ -1,0 +1,13 @@
+[{
+  "phrase": "my unit-tests failed.",
+  "label": "software"
+}, {
+  "phrase": "tried the program, but it was buggy.",
+  "label": "software"
+}, {
+  "phrase": "the drive has a 2TB capacity.",
+  "label": "hardware"
+}, {
+  "phrase": "i need a new power supply.",
+  "label": "hardware"
+}]
