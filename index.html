@@ -1,0 +1,149 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Chatty Brain</title>
+    <link rel="stylesheet" href="https://cdn.concisecss.com/concise.min.css">
+    <style>
+      html { font-size: 14px; margin:0 2em }
+      body { margin:2em auto; max-width:800px }
+      main, section { display:block; }
+      form button { background: rgb(130, 224, 255); border: none; }
+      .sender input[type=text] { width: 75%; margin-left: 0.5em; }
+      .sender form { margin: 0 0 1em; }
+      .connection { text-align: center; }
+      .messages { overflow: auto; }
+      .messages, li { list-style-type: none; padding: 0; }
+      .messages li { padding: 5px 10px; border-radius: 10px; margin: 1em 1em 0 0; }
+      .messages li:nth-child(odd) { padding: 1em; background: #eee; }
+      .messages li:nth-child(even) { padding: 1em; border: solid 1px #eee; background: #fff; }
+/*      button.disconnect { background: rgb(130, 224, 255); border: none; right: 0; position: absolute; }*/
+      .user-item ul li { list-style: none; padding: .5em; }
+      .typing { bottom: 50px; text-align: center; color: #787878; width: 100%; padding-right: 2em; }
+      .date { display: block; text-align: right; }
+      .name { display: block; font-style: italic; margin: .5em 0; }
+      .sender { position: fixed; bottom: 0; width: 30%; }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+
+      <main v-if="!join" class="connection">
+        <form action="">
+          <input type="text" max="12" v-model="name" placeholder="Name">
+          <button @click.prevent="joinChat(name)">Join Chat</button>
+        </form>
+      </main>
+
+      <main grid="no-gutters" v-if="join">
+        <section column>
+<!--           <div class="disconnect">
+              <button @click.prevent="closeChat(name)" class="disconnect">X</button>
+          </div> -->
+          <h4>Users</h4>
+          <ul>
+              <li v-for="user in users">{{ user }}</li>
+          </ul>
+        </section>
+        <section column="8">
+          <ul class="messages" id="messages" :style="heightpage">
+            <li v-for="message in messages">
+              <span class="name">{{ message.name }}</span>
+              {{ message.content }}
+              <span class="date">{{ message.date }}</span>
+            </li>
+          </ul>
+
+          <div class="sender">
+            <div class="typing">{{ typingRun }}</div>
+            <form action="">
+              <input type="text" v-model="input" autocomplete="off">
+              <button @click.prevent="post">Send</button>
+            </form>
+          </div>
+        </section>
+      </main>
+
+    </div>
+    <script src="https://unpkg.com/vue"></script>
+    <script src="https://unpkg.com/lodash@4.13.1/lodash.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.1/socket.io.js"></script>
+    <script>
+      let socket = io();
+
+      let vm = new Vue({
+        el: "#app",
+        data () {
+          return {
+            messages: [],
+            input: '',
+            join: false,
+            name: null,
+            users: [],
+            typingRun: '',
+            content: '',
+            now: '',
+            toppage: '',
+            heightpage: 'height:' + (window.innerHeight - 150) + 'px;',
+            element: ''
+          }
+        },
+        watch: {
+          input: function () {
+            this.typingRun = this.name + ' is typing ...'
+            this.getTyping()
+            socket.emit("typing", this.typingRun)
+          },
+          resize: function () {
+            this.heightpage = document.body.offsetHeight
+          }
+        },
+        methods: {
+          post: function (e) {
+            socket.emit('chat message', this.input)
+            this.input = ''
+            this.scrollBottom()
+          },
+          joinChat: function (name) {
+            socket.emit('username connect', this.name)
+            socket.emit("get users", this.name)
+            this.join = true
+          },
+          closeChat: function (name) {
+            socket.emit('username disconnect', this.name)
+            socket.emit("get users", this.name)
+            this.join = false
+          },
+          getTyping: _.debounce(
+            function () {
+              this.typingRun = ''
+              socket.emit("typing", this.typingRun)
+            },
+            // This is the number of milliseconds we expect
+            // for the user to stop typing.
+            500
+          ),
+          scrollBottom: function () {
+            this.element = document.getElementById("messages")
+            this.element.scrollTop = this.element.scrollHeight - this.element.clientHeight
+          }
+        },
+        mounted: function () {
+          socket.on('username connect', function (user) {
+            // this.user for 'chat message' socket
+            this.user = user
+            vm.users.push(this.user)
+          });
+          socket.on('chat message', function (msg) {
+            now = new Date().toLocaleString()
+            if(msg[0].bot === true) {
+              messages = [{name: 'The bot', date: now, content: msg[0].content}]
+            } else {
+              messages = [{name: this.user, date: now, content: msg}]
+            }
+            vm.messages.push(messages[0])
+          });
+        }
+      });
+    </script>
+  </body>
+</html>
